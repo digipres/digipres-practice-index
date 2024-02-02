@@ -1,8 +1,8 @@
 stages:
   fetch-ipres-metadata:
-    cmd: python src/phaidra.py fetch-metadata sources/ipres/index.csv sources/ipres/metadata
+    cmd: python src/fetcher.py fetch-metadata sources/ipres/index.csv sources/ipres/metadata
     deps:
     - sources/ipres/index.csv
-    - src/phaidra.py
+    - src/fetcher.py
     outs:
     - sources/ipres/metadata
