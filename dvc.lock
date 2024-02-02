@@ -1,0 +1,19 @@
+schema: '2.0'
+stages:
+  fetch-ipres-metadata:
+    cmd: python src/phaidra.py fetch-metadata sources/ipres/index.csv sources/ipres/metadata
+    deps:
+    - path: sources/ipres/index.csv
+      hash: md5
+      md5: e919e4419c5f4baae84c1b2f60ba06e2
+      size: 69
+    - path: src/phaidra.py
+      hash: md5
+      md5: 762c9d21e6b783066ac350bfbb9ed17d
+      size: 2179
+    outs:
+    - path: sources/ipres/metadata
+      hash: md5
+      md5: dc948385acf2a1f1ba17fff00d2e1156.dir
+      size: 89854
+      nfiles: 1
