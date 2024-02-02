@@ -14,3 +14,12 @@ stages:
     outs:
     - sources/ipres/merged.jsonl
     - sources/ipres/merged.csv
+  generate-sqlite:
+    cmd:
+    - sqlite-utils insert practice.db publications sources/ipres/merged.jsonl --nl
+    - sqlite-utils enable-fts practice.db publications title creators abstract
+    deps:
+    - sources/ipres/merged.jsonl
+    outs:
+    - practice.db
+
