@@ -6,7 +6,7 @@ import os.path
 
 PHAIDRA_API_URL = "https://services.phaidra.univie.ac.at/api"
 
-def get_phaidra_metadata(col_id, output_path):
+def get_phaidra_metadata(col_id, source_name, year, output_path):
     params = {
         "q" : "*:*",
         "wt" : "json",
@@ -25,14 +25,11 @@ def get_phaidra_metadata(col_id, output_path):
 
     with open(output_path, 'w') as outfile:
         for doc in j['response']['docs']:
+            doc['__source_col_id'] = col_id
+            doc['__source_name'] = source_name
+            doc['__year'] = year
             json.dump(doc, outfile)
             outfile.write('\n')
-
-
-def normalise_phaidra_jsonl(input_path):
-    pass
-    #print(doc['pid'], doc['cmodel'], doc['dc_title'], doc['dc_description'])
-    #Created? Modified? dc_language dc_identifier, dc_format, dc_creator [], 
 
 
 # Main for CLI
@@ -55,7 +52,7 @@ if __name__ == "__main__":
                     if not os.path.exists(args.output_dir):
                         os.makedirs(args.output_dir)
                     output_path = os.path.join(args.output_dir, f"{row['source_name']}.phaidra.jsonl")
-                    get_phaidra_metadata(row['repo_collection_id'], output_path)
+                    get_phaidra_metadata(row['repo_collection_id'], row['source_name'], int(row['year']), output_path)
                 else:
                     raise Exception(f"Unsupported repository system '{row['repo_system']}'!")
     else:

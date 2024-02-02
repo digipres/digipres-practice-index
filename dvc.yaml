@@ -6,3 +6,11 @@ stages:
     - src/fetcher.py
     outs:
     - sources/ipres/metadata
+  merge-ipres-metadata:
+    cmd: python src/merger.py sources/ipres/metadata sources/ipres/merged
+    deps:
+    - sources/ipres/metadata
+    - src/merger.py
+    outs:
+    - sources/ipres/merged.jsonl
+    - sources/ipres/merged.csv
