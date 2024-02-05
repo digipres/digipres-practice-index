@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "digipres-practice-index"
+authors = [
+    {name = "Andrew Jackson", email = "andrew.jackson@dpconline.org"},
+]
+description = "Tools for building an index of digital preservation practices."
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "AGPL-3"}
+dependencies = [
+    "dvc",
+    "dvc_gdrive",
+    "datasette",
+    "sqlite-utils",
+]
+dynamic = ["version"]
