@@ -41,8 +41,10 @@ def normalise_phaidra_jsonl(input_path, outfile):
             for keyword in nd['keywords']:
                 if keyword.startswith("Conferences -- iPRES Conference "):
                     continue
+                if keyword == "":
+                    continue
                 # Otherwise, keep:
-                to_keep.append(keyword.strip())
+                to_keep.append(keyword.strip().lower())
             nd['keywords'] = to_keep
             # Catch how Lightning Talks are indicated:
             if nd['abstract'] == 'Lightning Talk':
