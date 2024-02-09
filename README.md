@@ -3,6 +3,23 @@ An experiment in gathering together sources of information about digital preserv
 
 This initial plan is to experiment with using [DVC](ss) to gather useful information sources, starting with iPres. Then see if this can usefully be transformed into something searchable using [Datasette](https://datasette.io/) or [Datasette Lite](https://lite.datasette.io/).
 
+Why DVC? TBA but I like [the way it handles checking data dependencies](https://dvc.org/doc/user-guide/pipelines/defining-pipelines#simple-dependencies). Very #DigiPres... Also, e.g. https://dvc.org/doc/user-guide/data-management/remote-storage/google-drive
+
+## Development Setup
+
+Clone this repo. Set up a Python 3 virtual env, e.g.
+
+    python3 -m venv .venv
+    source .venv/bin/activate
+
+Install dependencies:
+
+    pip install .
+
+Pull the derived data:
+
+    dvc pull
+
 
 ## Sources of Practice
 
