@@ -1,15 +1,14 @@
 stages:
   fetch-ipres-metadata:
-    cmd: python src/fetcher.py fetch-metadata sources/ipres/index.csv sources/ipres/metadata
+    cmd: python src/fetcher.py fetch-metadata sources/ipres/index.csv sources/ipres/raw
     deps:
     - sources/ipres/index.csv
     - src/fetcher.py
-    outs:
-    - sources/ipres/metadata
+    # No 'outs' as we want to allow use git to manage/keep outputs.
   merge-ipres-metadata:
-    cmd: python src/merger.py sources/ipres/metadata sources/ipres/merged
+    cmd: python src/merger.py sources/ipres/raw sources/ipres/merged
     deps:
-    - sources/ipres/metadata
+    - sources/ipres/raw
     - src/merger.py
     outs:
     - sources/ipres/merged.jsonl
