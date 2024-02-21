@@ -9,72 +9,87 @@ logger = logging.getLogger(__name__)
 
 INST_RE = re.compile("^(.*) \((.*)\)$")
 
+from datetime import datetime
+from typing import List, Optional, Set
+from pydantic import BaseModel
+
+class ConferenceResource(BaseModel):
+    source_name: str
+    source_url: str
+    year: int
+    title: str
+    abstract: Optional[str] = None
+    language: str
+    creators: Optional[List[str]] = None
+    institutions: List[str]
+    license: str
+    size: int
+    type: str = 'paper'
+    date: Optional[datetime] = None
+    keywords: List[str] = []
 
 def normalise_phaidra_jsonl(input_path, outfile):
     with open(input_path) as f:
         for line in f:
             doc = json.loads(line) 
-            nd = {
-                'source_name' :doc['__source_name'],
-                'source_url': f"https://phaidra.univie.ac.at/{doc['pid']}",
-                'year': doc['__year'],
-                'title': doc['dc_title'][0],
-                'abstract' : doc['dc_description'][0],
-                'phaidra_pid': doc['pid'],
-                'language': doc['dc_language'][0],
-                'content_type': doc.get('dc_format', [None])[0],
-                'creators': doc.get('dc_creator', None),
-                'institutions' : set(),
-                'identifiers': doc['dc_identifier'],
-                'keywords': doc.get('keyword_suggest', [""])[0].split(","),
-                'license': doc['dc_license'][0],
-                'size': int(doc['size']),
-                'type': 'paper',
-                #'roles': json.loads(doc['uwm_roles_json'][0]), # This field doesn't seem to have anything unique in it.
-            }
+            nd = ConferenceResource(
+                source_name = doc['__source_name'],
+                source_url = f"https://phaidra.univie.ac.at/{doc['pid']}",
+                year = doc['__year'],
+                title = doc['dc_title'][0],
+                abstract = doc['dc_description'][0],
+                phaidra_pid = doc['pid'],
+                language = doc['dc_language'][0],
+                content_type = doc.get('dc_format', [None])[0],
+                creators = doc.get('dc_creator', None),
+                institutions = set(),
+                identifiers = doc['dc_identifier'],
+                keywords = doc.get('keyword_suggest', [""])[0].split(","),
+                license = doc['dc_license'][0],
+                size = int(doc['size']),
+            )
             # TBC: dc_license, dc_subject_eng, size, tcreated, tmodified, __source_col_id
             # Drop invalid/empty abstracts:
-            if nd['abstract'] == 'x':
-                nd['abstract'] = None
+            if nd.abstract == 'x':
+                nd.abstract = None
             # Drop keywords that are just default ones for the whole of iPRES:
             to_keep = []
-            for keyword in nd['keywords']:
+            for keyword in nd.keywords:
                 if keyword.startswith("Conferences -- iPRES Conference "):
                     continue
                 if keyword == "":
                     continue
                 # Otherwise, keep:
                 to_keep.append(keyword.strip().lower())
-            nd['keywords'] = to_keep
+            nd.keywords = to_keep
             # Catch how Lightning Talks are indicated:
-            if nd['abstract'] == 'Lightning Talk':
-                nd['type'] = 'lightning talk'
-                nd['abstract'] = None
+            if nd.abstract == 'Lightning Talk':
+                nd.type = 'lightning talk'
+                nd.abstract = None
             # Distinguish posters based on title or phrase in abstract:
-            if ": Poster " in nd['title'] or " (Poster) " in nd['title'] or \
-                (nd['abstract'] and ("this poster" in nd['abstract'].lower() \
-                                     or "the poster" in nd['abstract'].lower() \
-                                        or "our poster" in nd['abstract'].lower())):
-                nd['type'] = "poster"
+            if ": Poster " in nd.title or " (Poster) " in nd.title or \
+                (nd.abstract and ("this poster" in nd.abstract.lower() \
+                                     or "the poster" in nd.abstract.lower() \
+                                        or "our poster" in nd.abstract.lower())):
+                nd.type = "poster"
             # Shift institutions to separate field if present:
             creators = set()
             insts = set()
-            if nd['creators'] == None:
-                logger.error(f"No creator for {nd['title']} -- dropping this record")
+            if nd.creators == None:
+                logger.error(f"No creator for {nd.title} -- dropping this record")
                 continue
             else:
-                for creator in nd['creators']:
+                for creator in nd.creators:
                     m = INST_RE.match(creator)
                     if m:
                         creators.add(m.group(1).strip())
                         insts.add(m.group(2).strip())
                     else:
                         creators.add(creator.strip())
-            nd['creators'] = list(creators)
-            nd['institutions'] = list(insts)
+            nd.creators = list(creators)
+            nd.institutions = list(insts)
             # Write to file
-            json.dump(nd, outfile)
-            outfile.write('\n')
+            outfile.write(f'{nd.model_dump_json()}\n')
 
 def write_jsonl_to_csv(input_path, output_path):
     with open(input_path) as f:

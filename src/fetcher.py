@@ -51,7 +51,7 @@ if __name__ == "__main__":
                 if row['repo_system'] == 'phaidra':
                     if not os.path.exists(args.output_dir):
                         os.makedirs(args.output_dir)
-                    output_path = os.path.join(args.output_dir, f"{row['source_name']}.phaidra.jsonl")
+                    output_path = os.path.join(args.output_dir, f"{row['source_name'].lower()}{row['year']}.phaidra.jsonl")
                     get_phaidra_metadata(row['repo_collection_id'], row['source_name'], int(row['year']), output_path)
                 else:
                     raise Exception(f"Unsupported repository system '{row['repo_system']}'!")
