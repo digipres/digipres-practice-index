@@ -7,7 +7,8 @@ import logging
 from datetime import datetime
 from typing import List, Optional, Set
 from pydantic import BaseModel
-
+import requests
+import lxml.html
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,10 @@ DEFAULT_LICENSE = "CC-BY 4.0 International"
 # Pydantic data model for simple conference output records:
 class ConferenceResource(BaseModel):
     source_name: str
-    source_url: str
+    landing_page_url: Optional[str] = None
+    document_url: Optional[str] = None
+    slides_url: Optional[str] = None
+    notes_url: Optional[str] = None
     year: int
     title: str
     abstract: Optional[str] = None
@@ -38,7 +42,8 @@ def normalise_phaidra_jsonl(input_path):
             doc = json.loads(line) 
             nd = ConferenceResource(
                 source_name = doc['__source_name'],
-                source_url = f"https://phaidra.univie.ac.at/{doc['pid']}",
+                landing_page_url = f"https://phaidra.univie.ac.at/{doc['pid']}",
+                document_url = f"https://services.phaidra.univie.ac.at/api/object/{doc['pid']}/download",
                 year = doc['__year'],
                 title = doc['dc_title'][0],
                 abstract = doc['dc_description'][0],
@@ -106,7 +111,7 @@ def normalise_eventsair_json(input_file):
                     institutions=[speaker['Organization']],
                     license=DEFAULT_LICENSE,
                     size=None,
-                    source_url=source_url,
+                    document_url=source_url,
                     keywords=keywords,
                     abstract=abstract,
                     type='unknown',
@@ -125,9 +130,14 @@ def normalise_ideals_jsonl(input_path):
             # Have to know to reconstruct this (e.g. oai:www.ideals.illinois.edu:2142/121087) into a handle:
             handle_id = doc['oai_identifier'].split(":")[2]
             source_url = f"https://hdl.handle.net/{handle_id}"
+            # De-reference and parse for citation_pdf_url:
+            response = requests.get(source_url, allow_redirects=True)
+            tree = lxml.html.fromstring(response.text)
+            pdf_url = tree.xpath('/html/head/meta[@name="citation_pdf_url"]')[0].attrib['content']
             d = ConferenceResource(
                 source_name = 'iPRES',
-                source_url = source_url,
+                landing_page_url = source_url,
+                document_url=pdf_url,
                 year = '2023',
                 title = doc['title'][0],
                 abstract = doc.get('description',[None])[0],
@@ -196,7 +206,7 @@ if __name__ == "__main__":
         for path in os.listdir(args.input_dir):
             # Get the full input path:
             input_file = os.path.join(args.input_dir, path)
-            
+
             # Choose which reader to use:
             if input_file.endswith('.phaidra.jsonl'):
                 input_reader = normalise_phaidra_jsonl

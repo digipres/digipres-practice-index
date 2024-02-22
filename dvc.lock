@@ -21,17 +21,17 @@ stages:
       nfiles: 19
     - path: src/merger.py
       hash: md5
-      md5: 34df42061a171284089a00b4ddcff89c
-      size: 8200
+      md5: 71872e4d4367479628385175a878ce55
+      size: 9154
     outs:
     - path: sources/ipres/merged.csv
       hash: md5
-      md5: dc5e4532b02893b038faaa0446997f1e
-      size: 1360673
+      md5: a7a3b2b9981e50d2ac40c9f64b54ff80
+      size: 1431576
     - path: sources/ipres/merged.jsonl
       hash: md5
-      md5: 0fd96b0f654ba359004895110bb9d576
-      size: 1528166
+      md5: a3e3401927a56122470f28c56be62a19
+      size: 1664381
   generate-sqlite:
     cmd:
     - sqlite-utils insert practice.db publications sources/ipres/merged.jsonl --nl
@@ -39,10 +39,10 @@ stages:
     deps:
     - path: sources/ipres/merged.jsonl
       hash: md5
-      md5: 0fd96b0f654ba359004895110bb9d576
-      size: 1528166
+      md5: a3e3401927a56122470f28c56be62a19
+      size: 1664381
     outs:
     - path: practice.db
       hash: md5
-      md5: cf8c6987cd74982f602a373de5b92b8b
-      size: 2412544
+      md5: 858cd02d7eefad8a473f181c4bcdcc12
+      size: 2523136
