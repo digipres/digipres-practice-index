@@ -4,15 +4,17 @@ import csv
 import json
 import argparse
 import logging
-
-logger = logging.getLogger(__name__)
-
-INST_RE = re.compile("^(.*) \((.*)\)$")
-
 from datetime import datetime
 from typing import List, Optional, Set
 from pydantic import BaseModel
 
+
+logger = logging.getLogger(__name__)
+
+INST_RE = re.compile("^(.*) \((.*)\)$")
+DEFAULT_LICENSE = "CC-BY 4.0 International"
+
+# Pydantic data model for simple conference output records:
 class ConferenceResource(BaseModel):
     source_name: str
     source_url: str
@@ -28,6 +30,8 @@ class ConferenceResource(BaseModel):
     date: Optional[datetime] = None
     keywords: List[str] = []
 
+# Normalised data item generators:
+    
 def normalise_phaidra_jsonl(input_path):
     with open(input_path) as f:
         for line in f:
@@ -100,7 +104,7 @@ def normalise_eventsair_json(input_file):
                     title=speaker['PresenationTitle'],
                     creators=[f"{speaker['LastName']}, {speaker['FirstName']}"],
                     institutions=[speaker['Organization']],
-                    license="CC-By Attribution 4.0 International",
+                    license=DEFAULT_LICENSE,
                     size=None,
                     source_url=source_url,
                     keywords=keywords,
@@ -131,7 +135,7 @@ def normalise_ideals_jsonl(input_path):
                 creators = doc.get('creator',[]),
                 institutions = [],
                 keywords = doc['subject'],
-                license="CC-By Attribution 4.0 International",
+                license=DEFAULT_LICENSE,
                 #license = doc.get('rights',[None])[0], # Some variation in formatting, so hardcoding it instead.
                 size = None,
                 type = 'unknown',
@@ -140,6 +144,7 @@ def normalise_ideals_jsonl(input_path):
                 d.type = 'presentation'
             yield d
 
+# Helper to perfom some standard cleanup:
 def common_cleanup(nd: ConferenceResource):
     # Drop keywords that are just default ones for the whole of iPRES, normalise to lower case:
     to_keep = []
@@ -160,6 +165,7 @@ def common_cleanup(nd: ConferenceResource):
     # Return the modified item:
     return nd
 
+# Helper to generate a CSV version of the data:
 def write_jsonl_to_csv(input_path, output_path):
     with open(input_path) as f:
         with open(output_path, 'w+') as outf:
@@ -188,7 +194,10 @@ if __name__ == "__main__":
 
     with open(output_jsonl, 'w') as outfile:
         for path in os.listdir(args.input_dir):
+            # Get the full input path:
             input_file = os.path.join(args.input_dir, path)
+            
+            # Choose which reader to use:
             if input_file.endswith('.phaidra.jsonl'):
                 input_reader = normalise_phaidra_jsonl
             elif input_file.endswith('.eventsair.json'):
@@ -198,10 +207,13 @@ if __name__ == "__main__":
             else:
                 logger.warn(f"No code to handle {input_file}!")
                 continue
+
+            # Use the supplied generator to parse the file into records:
             for d in input_reader(input_file):
                 # Perform some common cleanup:
                 d = common_cleanup(d)
                 # Write to file
                 outfile.write(f'{d.model_dump_json()}\n')
+
     # Also write as CSV:
     write_jsonl_to_csv(input_path=output_jsonl, output_path=output_csv)
