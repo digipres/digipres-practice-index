@@ -22,13 +22,13 @@ class ConferenceResource(BaseModel):
     language: str
     creators: Optional[List[str]] = None
     institutions: List[str]
-    license: str
-    size: int
+    license: Optional[str] = None
+    size: Optional[int]
     type: str = 'paper'
     date: Optional[datetime] = None
     keywords: List[str] = []
 
-def normalise_phaidra_jsonl(input_path, outfile):
+def normalise_phaidra_jsonl(input_path):
     with open(input_path) as f:
         for line in f:
             doc = json.loads(line) 
@@ -52,16 +52,6 @@ def normalise_phaidra_jsonl(input_path, outfile):
             # Drop invalid/empty abstracts:
             if nd.abstract == 'x':
                 nd.abstract = None
-            # Drop keywords that are just default ones for the whole of iPRES:
-            to_keep = []
-            for keyword in nd.keywords:
-                if keyword.startswith("Conferences -- iPRES Conference "):
-                    continue
-                if keyword == "":
-                    continue
-                # Otherwise, keep:
-                to_keep.append(keyword.strip().lower())
-            nd.keywords = to_keep
             # Catch how Lightning Talks are indicated:
             if nd.abstract == 'Lightning Talk':
                 nd.type = 'lightning talk'
@@ -88,8 +78,87 @@ def normalise_phaidra_jsonl(input_path, outfile):
                         creators.add(creator.strip())
             nd.creators = list(creators)
             nd.institutions = list(insts)
-            # Write to file
-            outfile.write(f'{nd.model_dump_json()}\n')
+            yield nd
+
+def normalise_eventsair_json(input_file):
+    with open(input_file) as input:
+        events = json.load(input)
+    for item in events['AgendaData']['AgendaItems']:
+        if len(item['Speakers']) > 0:
+            for speaker in item['Speakers']:
+                for doc in speaker['Documents']:
+                    if doc['Name'] == 'Abstract':
+                        abstract = doc['PlainText']
+                    elif doc['Name'] == 'Keywords':
+                        keywords = doc['PlainText'].split(", ")
+                    elif doc['Name'] == 'Proposal Document':
+                        source_url = doc['Url']
+                d = ConferenceResource(
+                    source_name='iPRES',
+                    year=2022,
+                    language='eng',
+                    title=speaker['PresenationTitle'],
+                    creators=[f"{speaker['LastName']}, {speaker['FirstName']}"],
+                    institutions=[speaker['Organization']],
+                    license="CC-By Attribution 4.0 International",
+                    size=None,
+                    source_url=source_url,
+                    keywords=keywords,
+                    abstract=abstract,
+                    type='unknown',
+                    )
+                # Handle type:
+                types = [ "Panel", "Tutorial", "Workshop", "Long Paper", "Short Paper", "Poster" ]
+                for type in types:
+                    if d.title.startswith(f"{type}: "):
+                        d.type = type.lower()
+                yield d
+
+def normalise_ideals_jsonl(input_path):
+    with open(input_path) as f:
+        for line in f:
+            doc = json.loads(line)
+            # Have to know to reconstruct this (e.g. oai:www.ideals.illinois.edu:2142/121087) into a handle:
+            handle_id = doc['oai_identifier'].split(":")[2]
+            source_url = f"https://hdl.handle.net/{handle_id}"
+            d = ConferenceResource(
+                source_name = 'iPRES',
+                source_url = source_url,
+                year = '2023',
+                title = doc['title'][0],
+                abstract = doc.get('description',[None])[0],
+                language = doc.get('language',['eng'])[0],
+                creators = doc.get('creator',[]),
+                institutions = [],
+                keywords = doc['subject'],
+                license="CC-By Attribution 4.0 International",
+                #license = doc.get('rights',[None])[0], # Some variation in formatting, so hardcoding it instead.
+                size = None,
+                type = 'unknown',
+            )
+            if d.title.endswith(' [presentation]'):
+                d.type = 'presentation'
+            yield d
+
+def common_cleanup(nd: ConferenceResource):
+    # Drop keywords that are just default ones for the whole of iPRES, normalise to lower case:
+    to_keep = []
+    for keyword in nd.keywords:
+        keyword = keyword.strip().lower()
+        if keyword.startswith("conferences -- ipres conference "):
+            continue
+        if keyword == 'ipres' or keyword.startswith('ipres '):
+            continue
+        if keyword == "":
+            continue
+        # Otherwise, keep:
+        to_keep.append(keyword)
+    nd.keywords = to_keep
+    # Standard three-character language code:
+    if nd.language == 'en':
+        nd.language = 'eng'
+    # Return the modified item:
+    return nd
 
 def write_jsonl_to_csv(input_path, output_path):
     with open(input_path) as f:
@@ -119,7 +188,20 @@ if __name__ == "__main__":
 
     with open(output_jsonl, 'w') as outfile:
         for path in os.listdir(args.input_dir):
-            if path.endswith('.phaidra.jsonl'):
-                normalise_phaidra_jsonl(os.path.join(args.input_dir, path), outfile)
+            input_file = os.path.join(args.input_dir, path)
+            if input_file.endswith('.phaidra.jsonl'):
+                input_reader = normalise_phaidra_jsonl
+            elif input_file.endswith('.eventsair.json'):
+                input_reader = normalise_eventsair_json
+            elif input_file.endswith('ideals.jsonl'):
+                input_reader = normalise_ideals_jsonl
+            else:
+                logger.warn(f"No code to handle {input_file}!")
+                continue
+            for d in input_reader(input_file):
+                # Perform some common cleanup:
+                d = common_cleanup(d)
+                # Write to file
+                outfile.write(f'{d.model_dump_json()}\n')
     # Also write as CSV:
     write_jsonl_to_csv(input_path=output_jsonl, output_path=output_csv)
