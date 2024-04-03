@@ -6,7 +6,7 @@ stages:
     - src/fetcher.py
     # No 'outs' as we want to allow use git to manage/keep outputs.
   merge-ipres-metadata:
-    cmd: python src/merger.py sources/ipres/raw sources/ipres/merged
+    cmd: python -m src.merger sources/ipres/raw sources/ipres/merged
     deps:
     - sources/ipres/raw
     - src/merger.py
@@ -21,4 +21,9 @@ stages:
     - sources/ipres/merged.jsonl
     outs:
     - practice.db
+  generate-markdown:
+    cmd: python -m src.pubmaker sources/ipres/merged.jsonl ../publications/ipres
+    deps:
+    - sources/ipres/merged.jsonl
+    # No 'outs' as it'll wipe the output folder by default.
 

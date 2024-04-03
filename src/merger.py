@@ -4,35 +4,16 @@ import csv
 import json
 import argparse
 import logging
-from datetime import datetime
-from typing import List, Optional, Set
-from pydantic import BaseModel
 import requests
 import lxml.html
+from src.models import Publication
 
 logger = logging.getLogger(__name__)
 
 INST_RE = re.compile("^(.*) \((.*)\)$")
+TITLE_END_1_RE = re.compile(r"(:|-) (iPres|iPRES|iPES) \d{4} (: |- |– |)[a-zA-Z, ]+$")
+TITLE_END_2_RE = re.compile(r"(:|-) ([a-zA-Z ]+) (:|-) (iPres|iPRES) \d{4} (:|-) [a-zA-Z, ]+$")
 DEFAULT_LICENSE = "CC-BY 4.0 International"
-
-# Pydantic data model for simple conference output records:
-class ConferenceResource(BaseModel):
-    source_name: str
-    landing_page_url: Optional[str] = None
-    document_url: Optional[str] = None
-    slides_url: Optional[str] = None
-    notes_url: Optional[str] = None
-    year: int
-    title: str
-    abstract: Optional[str] = None
-    language: str
-    creators: Optional[List[str]] = None
-    institutions: List[str]
-    license: Optional[str] = None
-    size: Optional[int]
-    type: str = 'paper'
-    date: Optional[datetime] = None
-    keywords: List[str] = []
 
 # Normalised data item generators:
     
@@ -40,7 +21,7 @@ def normalise_phaidra_jsonl(input_path):
     with open(input_path) as f:
         for line in f:
             doc = json.loads(line) 
-            nd = ConferenceResource(
+            nd = Publication(
                 source_name = doc['__source_name'],
                 landing_page_url = f"https://phaidra.univie.ac.at/{doc['pid']}",
                 document_url = f"https://services.phaidra.univie.ac.at/api/object/{doc['pid']}/download",
@@ -71,6 +52,13 @@ def normalise_phaidra_jsonl(input_path):
                                      or "the poster" in nd.abstract.lower() \
                                         or "our poster" in nd.abstract.lower())):
                 nd.type = "poster"
+            # Clean up titles, using any useful metadata in the title:
+            m = TITLE_END_2_RE.search(nd.title)
+            logger.info(f"Processing PHAIDRA article \"{nd.title}\"...")
+            if m:
+                nd.type = m.group(2).lower()
+                nd.title = TITLE_END_2_RE.sub("", nd.title)
+            nd.title = TITLE_END_1_RE.sub("", nd.title)
             # Shift institutions to separate field if present:
             creators = set()
             insts = set()
@@ -102,7 +90,7 @@ def normalise_eventsair_json(input_file):
                         keywords = doc['PlainText'].split(", ")
                     elif doc['Name'] == 'Proposal Document':
                         source_url = doc['Url']
-                d = ConferenceResource(
+                d = Publication(
                     source_name='iPRES',
                     year=2022,
                     language='eng',
@@ -132,9 +120,10 @@ def normalise_ideals_jsonl(input_path):
             source_url = f"https://hdl.handle.net/{handle_id}"
             # De-reference and parse for citation_pdf_url:
             response = requests.get(source_url, allow_redirects=True)
+            response.raise_for_status()  # Raise an exception for bad responses
             tree = lxml.html.fromstring(response.text)
             pdf_url = tree.xpath('/html/head/meta[@name="citation_pdf_url"]')[0].attrib['content']
-            d = ConferenceResource(
+            d = Publication(
                 source_name = 'iPRES',
                 landing_page_url = source_url,
                 document_url=pdf_url,
@@ -155,7 +144,7 @@ def normalise_ideals_jsonl(input_path):
             yield d
 
 # Helper to perfom some standard cleanup:
-def common_cleanup(nd: ConferenceResource):
+def common_cleanup(nd: Publication):
     # Drop keywords that are just default ones for the whole of iPRES, normalise to lower case:
     to_keep = []
     for keyword in nd.keywords:
@@ -191,6 +180,7 @@ def write_jsonl_to_csv(input_path, output_path):
                 writer.writerow(doc)
                 counter += 1
 
+
 # Main for CLI
 if __name__ == "__main__":
     # Set up a simpler argument parser:
@@ -202,10 +192,13 @@ if __name__ == "__main__":
     output_jsonl = args.output_prefix+".jsonl"
     output_csv = args.output_prefix+".csv"
 
+    logging.basicConfig(level=logging.INFO)
+
     with open(output_jsonl, 'w') as outfile:
         for path in os.listdir(args.input_dir):
             # Get the full input path:
             input_file = os.path.join(args.input_dir, path)
+            logger.info(f"Reading {input_file}...")
 
             # Choose which reader to use:
             if input_file.endswith('.phaidra.jsonl'):
