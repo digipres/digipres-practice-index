@@ -4,10 +4,9 @@ import csv
 import json
 import argparse
 import logging
-import requests
-import lxml.html
 from src.models import Publication
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 INST_RE = re.compile("^(.*) \((.*)\)$")
@@ -60,8 +59,8 @@ def normalise_phaidra_jsonl(input_path):
                 nd.title = TITLE_END_2_RE.sub("", nd.title)
             nd.title = TITLE_END_1_RE.sub("", nd.title)
             # Shift institutions to separate field if present:
-            creators = set()
-            insts = set()
+            creators = list()
+            insts = list()
             if nd.creators == None:
                 logger.error(f"No creator for {nd.title} -- dropping this record")
                 continue
@@ -69,12 +68,16 @@ def normalise_phaidra_jsonl(input_path):
                 for creator in nd.creators:
                     m = INST_RE.match(creator)
                     if m:
-                        creators.add(m.group(1).strip())
-                        insts.add(m.group(2).strip())
+                        creator = m.group(1).strip()
+                        creators.append(creator)
+                        # Don't duplicate but retain order:
+                        inst = m.group(2).strip()
+                        if inst not in insts:
+                            insts.append(inst)
                     else:
-                        creators.add(creator.strip())
-            nd.creators = list(creators)
-            nd.institutions = list(insts)
+                        creators.append(creator.strip())
+            nd.creators = creators
+            nd.institutions = insts
             yield nd
 
 def normalise_eventsair_json(input_file):
@@ -119,19 +122,10 @@ def normalise_ideals_jsonl(input_path):
     with open(input_path) as f:
         for line in f:
             doc = json.loads(line)
-            # Have to know to reconstruct this (e.g. oai:www.ideals.illinois.edu:2142/121087) into a handle:
-            handle_id = doc['oai_identifier'].split(":")[2]
-            source_url = f"https://hdl.handle.net/{handle_id}"
-            # De-reference and parse for citation_pdf_url:
-            logger.info(f"Getting {source_url}...")
-            response = requests.get(source_url, allow_redirects=True)
-            response.raise_for_status()  # Raise an exception for bad responses
-            tree = lxml.html.fromstring(response.text)
-            pdf_url = tree.xpath('/html/head/meta[@name="citation_pdf_url"]')[0].attrib['content']
             d = Publication(
                 source_name = 'iPRES',
-                landing_page_url = source_url,
-                document_url=pdf_url,
+                landing_page_url = doc['source_url'],
+                document_url=doc['pdf_url'],
                 year = '2023',
                 title = doc['title'][0],
                 abstract = doc.get('description',[None])[0],
@@ -196,8 +190,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     output_jsonl = args.output_prefix+".jsonl"
     output_csv = args.output_prefix+".csv"
-
-    logging.basicConfig(level=logging.INFO)
 
     with open(output_jsonl, 'w') as outfile:
         for path in os.listdir(args.input_dir):

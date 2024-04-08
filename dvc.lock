@@ -16,21 +16,21 @@ stages:
     deps:
     - path: sources/ipres/raw
       hash: md5
-      md5: 949b5545f3f58d12d37361908dd720e0.dir
-      size: 5735244
+      md5: d252e904897784dadd88b759010afa63.dir
+      size: 5751666
       nfiles: 19
     - path: src/merger.py
       hash: md5
-      md5: ab6e1943e1463277644dc1ec8b9bda72
-      size: 9441
+      md5: 0c4546fc587d83be5c95df7fb311784b
+      size: 8957
     outs:
     - path: sources/ipres/merged.csv
       hash: md5
-      md5: 02e842db743cf860fbde0be070a59148
+      md5: d010982d246eef3ee524f1cf20a94aef
       size: 1406225
     - path: sources/ipres/merged.jsonl
       hash: md5
-      md5: b293f14937381d2bf1db8c5b47286a79
+      md5: 2f2f3db9ffe8b713d9a639621480d6fe
       size: 1646265
   generate-sqlite:
     cmd:
@@ -40,17 +40,35 @@ stages:
     deps:
     - path: sources/ipres/merged.jsonl
       hash: md5
-      md5: b293f14937381d2bf1db8c5b47286a79
+      md5: 2f2f3db9ffe8b713d9a639621480d6fe
       size: 1646265
     outs:
     - path: practice.db
       hash: md5
-      md5: 52ce143ddd446756e5d9e7f97beda3f6
+      md5: 2754c7702f9a76d1f13342df48031254
       size: 2519040
   generate-markdown:
     cmd: python -m src.pubmaker sources/ipres/merged.jsonl ../publications/ipres
     deps:
     - path: sources/ipres/merged.jsonl
       hash: md5
-      md5: b293f14937381d2bf1db8c5b47286a79
+      md5: 2f2f3db9ffe8b713d9a639621480d6fe
       size: 1646265
+  fetch-phaidra-metadata:
+    cmd: python src/fetcher.py fetch-metadata sources/ipres/index.csv sources/ipres/raw
+    deps:
+    - path: sources/ipres/index.csv
+      hash: md5
+      md5: c7bd3c494bb08dd127d8dbec91bff5c3
+      size: 525
+    - path: src/fetcher.py
+      hash: md5
+      md5: c6e26e19a291a5fe6ff1d852d19779f5
+      size: 2173
+  fetch-ideals-metadata:
+    cmd: python src/fetcher-ideals.py sources/ipres/raw/ipres2023.ideals.jsonl
+    deps:
+    - path: src/fetcher-ideals.py
+      hash: md5
+      md5: ca711b4fdba2aaa122007196b625fa84
+      size: 2016
