@@ -7,7 +7,7 @@ class Publication(BaseModel):
     source_name: str
     landing_page_url: Optional[str] = None
     document_url: Optional[str] = None
-    presentation_url: Optional[str] = None
+    slides_url: Optional[str] = None
     notes_url: Optional[str] = None
     year: int
     title: str

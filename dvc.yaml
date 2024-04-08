@@ -27,7 +27,9 @@ stages:
     outs:
     - practice.db
   generate-markdown:
-    cmd: python -m src.pubmaker sources/ipres/merged.jsonl ../publications/ipres
+    cmd:
+    - rm -f ../publications/ipres/ipres-*/papers/*.md 
+    - python -m src.pubmaker sources/ipres/merged.jsonl ../publications/ipres
     deps:
     - sources/ipres/merged.jsonl
     # No 'outs' as it'll wipe the output folder by default.

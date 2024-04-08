@@ -21,17 +21,17 @@ stages:
       nfiles: 19
     - path: src/merger.py
       hash: md5
-      md5: 0c4546fc587d83be5c95df7fb311784b
-      size: 8957
+      md5: da66da30acc93dd9ad6c9a9a1462b3d6
+      size: 9704
     outs:
     - path: sources/ipres/merged.csv
       hash: md5
-      md5: d010982d246eef3ee524f1cf20a94aef
-      size: 1406225
+      md5: 067e4675b111b871a078cdc5e78f6110
+      size: 1360822
     - path: sources/ipres/merged.jsonl
       hash: md5
-      md5: 2f2f3db9ffe8b713d9a639621480d6fe
-      size: 1646265
+      md5: deed4231087cdea176092c4381e2c57a
+      size: 1586597
   generate-sqlite:
     cmd:
     - sqlite-utils insert practice.db publications sources/ipres/merged.jsonl --nl
@@ -40,20 +40,22 @@ stages:
     deps:
     - path: sources/ipres/merged.jsonl
       hash: md5
-      md5: 2f2f3db9ffe8b713d9a639621480d6fe
-      size: 1646265
+      md5: deed4231087cdea176092c4381e2c57a
+      size: 1586597
     outs:
     - path: practice.db
       hash: md5
-      md5: 2754c7702f9a76d1f13342df48031254
-      size: 2519040
+      md5: 60141ff8a8a4f379168d0352ba94b786
+      size: 2433024
   generate-markdown:
-    cmd: python -m src.pubmaker sources/ipres/merged.jsonl ../publications/ipres
+    cmd:
+    - rm -f ../publications/ipres/ipres-*/papers/*.md
+    - python -m src.pubmaker sources/ipres/merged.jsonl ../publications/ipres
     deps:
     - path: sources/ipres/merged.jsonl
       hash: md5
-      md5: 2f2f3db9ffe8b713d9a639621480d6fe
-      size: 1646265
+      md5: deed4231087cdea176092c4381e2c57a
+      size: 1586597
   fetch-phaidra-metadata:
     cmd: python src/fetcher.py fetch-metadata sources/ipres/index.csv sources/ipres/raw
     deps:

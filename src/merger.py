@@ -119,6 +119,10 @@ def normalise_eventsair_json(input_file):
                 yield d
 
 def normalise_ideals_jsonl(input_path):
+    # Normalise and separate:
+    papers = {}
+    presentations = []
+    presentation_marker = ' [presentation]'
     with open(input_path) as f:
         for line in f:
             doc = json.loads(line)
@@ -136,11 +140,30 @@ def normalise_ideals_jsonl(input_path):
                 license=DEFAULT_LICENSE,
                 #license = doc.get('rights',[None])[0], # Some variation in formatting, so hardcoding it instead.
                 size = None,
-                type = 'unknown',
+                type = 'paper',
             )
-            if d.title.endswith(' [presentation]'):
+            if d.title.endswith(presentation_marker):
                 d.type = 'presentation'
-            yield d
+                d.title = d.title[:-len(presentation_marker)]
+                presentations.append(d)
+            else:
+                if d.title in papers:
+                    raise Exception(f"Duplicate title for {d}!")
+                else:
+                    papers[d.title] = d
+    
+    # Merge presentations
+    for p in presentations:
+        print(f"'{p.title}'")
+        if p.title in papers:
+            papers[p.title].slides_url = p.landing_page_url
+        else:
+            # This is just a presentation, so keep it as-is:
+            papers[p.title] = p
+        
+    # Output papers:
+    for title in papers:
+        yield papers[title]
 
 # Helper to perfom some standard cleanup:
 def common_cleanup(nd: Publication):
