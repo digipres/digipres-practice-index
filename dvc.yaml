@@ -16,7 +16,7 @@ stages:
   generate-sqlite:
     cmd:
     - sqlite-utils insert practice.db publications sources/ipres/merged.jsonl --nl
-    - sqlite-utils enable-fts practice.db publications title creators abstract
+    - sqlite-utils enable-fts practice.db publications title creators abstract keywords institutions type
     deps:
     - sources/ipres/merged.jsonl
     outs:

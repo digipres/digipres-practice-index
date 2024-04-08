@@ -82,6 +82,10 @@ def normalise_eventsair_json(input_file):
         events = json.load(input)
     for item in events['AgendaData']['AgendaItems']:
         if len(item['Speakers']) > 0:
+            # Reset fields so they don't get copied:
+            abstract = None
+            keywords = []
+            source_url = None
             for speaker in item['Speakers']:
                 for doc in speaker['Documents']:
                     if doc['Name'] == 'Abstract':
@@ -94,7 +98,7 @@ def normalise_eventsair_json(input_file):
                     source_name='iPRES',
                     year=2022,
                     language='eng',
-                    title=speaker['PresenationTitle'],
+                    title=speaker['PresenationTitle'], # Mis-spelling is required!
                     creators=[f"{speaker['LastName']}, {speaker['FirstName']}"],
                     institutions=[speaker['Organization']],
                     license=DEFAULT_LICENSE,
@@ -119,6 +123,7 @@ def normalise_ideals_jsonl(input_path):
             handle_id = doc['oai_identifier'].split(":")[2]
             source_url = f"https://hdl.handle.net/{handle_id}"
             # De-reference and parse for citation_pdf_url:
+            logger.info(f"Getting {source_url}...")
             response = requests.get(source_url, allow_redirects=True)
             response.raise_for_status()  # Raise an exception for bad responses
             tree = lxml.html.fromstring(response.text)

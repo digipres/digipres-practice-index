@@ -21,28 +21,36 @@ stages:
       nfiles: 19
     - path: src/merger.py
       hash: md5
-      md5: 8cecadcda07dffe2192f6678f8cc5fc3
-      size: 9219
+      md5: ab6e1943e1463277644dc1ec8b9bda72
+      size: 9441
     outs:
     - path: sources/ipres/merged.csv
       hash: md5
-      md5: 8f56754bce3ff31f542ed173647aafc1
-      size: 1407706
+      md5: 02e842db743cf860fbde0be070a59148
+      size: 1406225
     - path: sources/ipres/merged.jsonl
       hash: md5
-      md5: 72f8fc39dce4002f27f6124d73c826f6
-      size: 1647733
+      md5: b293f14937381d2bf1db8c5b47286a79
+      size: 1646265
   generate-sqlite:
     cmd:
     - sqlite-utils insert practice.db publications sources/ipres/merged.jsonl --nl
-    - sqlite-utils enable-fts practice.db publications title creators abstract
+    - sqlite-utils enable-fts practice.db publications title creators abstract keywords
+      institutions type
     deps:
     - path: sources/ipres/merged.jsonl
       hash: md5
-      md5: 72f8fc39dce4002f27f6124d73c826f6
-      size: 1647733
+      md5: b293f14937381d2bf1db8c5b47286a79
+      size: 1646265
     outs:
     - path: practice.db
       hash: md5
-      md5: b2747ee8ca0464ca93ab9ba404d9e44e
-      size: 2482176
+      md5: 52ce143ddd446756e5d9e7f97beda3f6
+      size: 2519040
+  generate-markdown:
+    cmd: python -m src.pubmaker sources/ipres/merged.jsonl ../publications/ipres
+    deps:
+    - path: sources/ipres/merged.jsonl
+      hash: md5
+      md5: b293f14937381d2bf1db8c5b47286a79
+      size: 1646265
