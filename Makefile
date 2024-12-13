@@ -34,3 +34,7 @@ practice.db: sources/ipres/merged.jsonl
 generate-markdown: sources/ipres/merged.jsonl
 	rm -f ../publications/ipres/ipres-*/papers/*.md 
 	python -m src.pubmaker sources/ipres/merged.jsonl ../publications/ipres
+
+# Generate the author graph:
+generate-networks: sources/ipres/merged.jsonl
+	python -m src.graph_gen sources/ipres/merged.jsonl ipres-graph.json
