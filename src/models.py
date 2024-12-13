@@ -9,13 +9,14 @@ class Publication(BaseModel):
     document_url: Optional[str] = None
     slides_url: Optional[str] = None
     notes_url: Optional[str] = None
+    stream_url: Optional[str] = None
     year: int
     title: str
     abstract: Optional[str] = None
     language: str
     creators: Optional[List[str]] = None
     institutions: List[str]
-    license: Optional[str] = None
+    license: Optional[str] = None # FIXME Should have been licence!
     size: Optional[int]
     type: str = 'paper'
     date: Optional[datetime] = None

@@ -21,8 +21,8 @@ stages:
       nfiles: 19
     - path: src/merger.py
       hash: md5
-      md5: da66da30acc93dd9ad6c9a9a1462b3d6
-      size: 9704
+      md5: def1a6467a2171f99fe538913735f512
+      size: 9705
     outs:
     - path: sources/ipres/merged.csv
       hash: md5

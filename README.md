@@ -16,6 +16,10 @@ Install dependencies:
 
     pip install .
 
+Optionally, install NLP data required for some analysis/processing (not in production use):
+
+    python -m spacy download en_core_web_lg
+
 Pull the derived data:
 
     dvc pull
@@ -28,7 +32,7 @@ Run the repro chain:
 
 Try the Datasette:
 
-    datasette serve practice.db
+    datasette serve practice.db --setting truncate_cells_html 120
 
 After which you should be able to go to e.g. http://127.0.0.1:8001/practice/publications?_facet=type&_searchmode=raw&_facet=year&_facet_array=creators&_facet_array=institutions&_facet_size=10&_sort=year
 
@@ -57,3 +61,6 @@ The information about each iPRES conference is now stored as a set of Markdown+m
 #### OSF
 
 - More recent conferences appear in OSF, which has a much more complicated structure, but allows more types of materials to be stored.
+
+#### IDEALS
+

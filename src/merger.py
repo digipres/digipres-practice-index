@@ -165,6 +165,35 @@ def normalise_ideals_jsonl(input_path):
     for title in papers:
         yield papers[title]
 
+def normalise_ghent_csv(input_file):
+    with open(input_file, encoding='utf-8-sig') as csv_file:
+        reader = csv.DictReader(csv_file)
+        for item in reader:
+            # Skip non-publications:
+            if not item['Authors']:
+                continue
+            # Otherwise:
+            d = Publication(
+                source_name='iPRES',
+                year=2024,
+                language='eng',
+                title=item['Title'],
+                creators=item['Authors'].split(','),
+                institutions=[],
+                license=item['License'],
+                size=None,
+                document_url=item['DOI'],
+                landing_page_url=item['PublicationLocation'],
+                slides_url=item['PresentationMaterials'],
+                stream_url=item['SessionVideoLocation'],
+                notes_url=item['CollaborativeNotesLocation'],
+                keywords=[ item['CompetencyFrameworkBestMatch'], item['ConferenceTheme'] ],
+                abstract=item['Abstract_MARKDOWN'],
+                type=item['AcceptedFormat'].lower(),
+                date=f"{item['PresentationDate']}T{item['PresentationStart']}:00+01:00",
+                )
+            yield d
+
 # Helper to perfom some standard cleanup:
 def common_cleanup(nd: Publication):
     # Drop keywords that are just default ones for the whole of iPRES, normalise to lower case:
@@ -227,8 +256,10 @@ if __name__ == "__main__":
                 input_reader = normalise_eventsair_json
             elif input_file.endswith('ideals.jsonl'):
                 input_reader = normalise_ideals_jsonl
+            elif input_file.endswith('ghent.csv'):
+                input_reader = normalise_ghent_csv
             else:
-                logger.warn(f"No code to handle {input_file}!")
+                logger.warning(f"No code to handle {input_file}!")
                 continue
 
             # Use the supplied generator to parse the file into records:
