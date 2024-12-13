@@ -176,7 +176,11 @@ def normalise_ghent_csv(input_file):
             # First set up the document_url, using the PubPub PDF if available:
             document_url = None
             if item['PublicationLocation']:
-                document_url = f"{item['PublicationLocation']}download/pdf"
+                document_url = item['PublicationLocation']
+                if document_url.endswith('/'):
+                    document_url += "download/pdf"
+                else:
+                    document_url += "/download/pdf"
             elif item['PresentationMaterials']:
                 document_url = item['PresentationMaterials']
             d = Publication(
