@@ -69,13 +69,14 @@ def normalise_phaidra_jsonl(input_path):
                     m = INST_RE.match(creator)
                     if m:
                         creator = m.group(1).strip()
-                        creators.append(creator)
                         # Don't duplicate but retain order:
                         inst = m.group(2).strip()
                         if inst not in insts:
                             insts.append(inst)
                     else:
-                        creators.append(creator.strip())
+                        creator = creator.strip()
+                    creator = uncomma_name(creator)
+                    creators.append(creator)
             nd.creators = creators
             nd.institutions = insts
             yield nd
@@ -102,7 +103,7 @@ def normalise_eventsair_json(input_file):
                     year=2022,
                     language='eng',
                     title=speaker['PresenationTitle'], # Mis-spelling is required!
-                    creators=[f"{speaker['LastName']}, {speaker['FirstName']}"],
+                    creators=[f"{speaker['FirstName']} {speaker['LastName']}"],
                     institutions=[speaker['Organization']],
                     license=DEFAULT_LICENSE,
                     size=None,
@@ -126,6 +127,9 @@ def normalise_ideals_jsonl(input_path):
     with open(input_path) as f:
         for line in f:
             doc = json.loads(line)
+            creators = []
+            for creator in doc.get('creator',[]):
+                creators.append(uncomma_name(creator))
             d = Publication(
                 source_name = 'iPRES',
                 landing_page_url = doc['source_url'],
@@ -134,7 +138,7 @@ def normalise_ideals_jsonl(input_path):
                 title = doc['title'][0],
                 abstract = doc.get('description',[None])[0],
                 language = doc.get('language',['eng'])[0],
-                creators = doc.get('creator',[]),
+                creators = creators,
                 institutions = [],
                 keywords = doc['subject'],
                 license=DEFAULT_LICENSE,
@@ -203,6 +207,13 @@ def normalise_ghent_csv(input_file):
                 date=f"{item['PresentationDate']}T{item['PresentationStart']}:00+01:00",
                 )
             yield d
+
+def uncomma_name(name):
+    if ',' in name:
+        surname, fornames = name.split(",", maxsplit=1)
+        return f"{fornames.strip()} {surname.strip()}"
+    else:
+        return name
 
 # Helper to perfom some standard cleanup:
 def common_cleanup(nd: Publication):
