@@ -192,7 +192,7 @@ def normalise_ghent_csv(input_file):
                 year=2024,
                 language='eng',
                 title=item['Title'],
-                creators=item['Authors'].split(','),
+                creators=[x.strip() for x in item['Authors'].split(',')],
                 institutions=[],
                 license=item['License'],
                 size=None,
@@ -213,7 +213,7 @@ def uncomma_name(name):
         surname, fornames = name.split(",", maxsplit=1)
         return f"{fornames.strip()} {surname.strip()}"
     else:
-        return name
+        return name.strip()
 
 # Helper to perfom some standard cleanup:
 def common_cleanup(nd: Publication):
