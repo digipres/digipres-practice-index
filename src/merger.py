@@ -177,16 +177,17 @@ def normalise_ghent_csv(input_file):
             if not item['Authors']:
                 continue
             # Otherwise:
-            # First set up the document_url, using the PubPub PDF if available:
+            # First set up the document_url, using the Poster or PubPub PDF if available:
             document_url = None
-            if item['PublicationLocation']:
+            if item['PosterImageLocation']:
+                document_url = item['PosterImageLocation']
+            elif item['PublicationLocation']:
                 document_url = item['PublicationLocation']
-                if document_url.endswith('/'):
-                    document_url += "download/pdf"
-                else:
-                    document_url += "/download/pdf"
-            elif item['PresentationMaterials']:
-                document_url = item['PresentationMaterials']
+                if "ipres2024.pubpub.org" in document_url:
+                    if document_url.endswith('/'):
+                        document_url += "download/pdf"
+                    else:
+                        document_url += "/download/pdf"
             d = Publication(
                 source_name='iPRES',
                 year=2024,
