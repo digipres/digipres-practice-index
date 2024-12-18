@@ -1,11 +1,15 @@
 # digipres-practice-index
 An experiment in gathering together sources of information about digital preservation practices
 
-This initial plan is to experiment with using [DVC](ss) to gather useful information sources, starting with iPres. Then see if this can usefully be transformed into something searchable using [Datasette](https://datasette.io/) or [Datasette Lite](https://lite.datasette.io/).
+This initial plan is to experiment with using Python to gather useful information sources, starting with iPres. Then see if this can usefully be transformed into something searchable using [Datasette](https://datasette.io/) or [Datasette Lite](https://lite.datasette.io/).
 
-Why DVC? TBA but I like [the way it handles checking data dependencies](https://dvc.org/doc/user-guide/pipelines/defining-pipelines#simple-dependencies). Very #DigiPres... Also, e.g. https://dvc.org/doc/user-guide/data-management/remote-storage/google-drive
+This originally relied on a tool called [DVC](https://dvc.org/). Why DVC? Because I wanted to manage how the data is complied, and I liked [the way it handles checking data dependencies](https://dvc.org/doc/user-guide/pipelines/defining-pipelines#simple-dependencies). Very #DigiPres... Also, e.g. [remote storage integration for data sets on Google Drive](https://dvc.org/doc/user-guide/data-management/remote-storage/google-drive).
+
+However, having tried both DVC and [Snakemake](https://snakemake.readthedocs.io/), they seem very difficult to work with. Lots of complex dependencies that don't always install easily, and over-engineered for this use case. So, instead, build pipelines are manage the old-fashioned way, using [Make](https://en.wikipedia.org/wiki/Make_(software)). There's lots of tutorials for Make ([e.g.](https://makefiletutorial.com/)), and the Turing Way book has a really good section called [Reproducibility with Make](https://book.the-turing-way.org/reproducible-research/make.html).
 
 ## Development Setup
+
+You need Python 3 and Make.
 
 Clone this repo. Set up a Python 3 virtual env, e.g.
 
@@ -20,21 +24,19 @@ Optionally, install NLP data required for some analysis/processing (not in produ
 
     python -m spacy download en_core_web_lg
 
-Pull the derived data:
-
-    dvc pull
-
 ## Local Usage
 
-Run the repro chain:
+Build the data:
 
-    dvc repro
+    make
 
-Try the Datasette:
+Try the Datasette view:
 
     datasette serve practice.db --setting truncate_cells_html 120
 
 After which you should be able to go to e.g. http://127.0.0.1:8001/practice/publications?_facet=type&_searchmode=raw&_facet=year&_facet_array=creators&_facet_array=institutions&_facet_size=10&_sort=year
+
+Other build targets generate other derivatives. Check the [Makefile](./Makefile) for details.
 
 ## Sources of Practice
 
