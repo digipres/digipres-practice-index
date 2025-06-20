@@ -2,7 +2,7 @@ import urllib.request
 import argparse
 import json
 import os.path
-from src.models import Publication
+from dppi.models import Publication
 import frontmatter
 from slugify import slugify
 

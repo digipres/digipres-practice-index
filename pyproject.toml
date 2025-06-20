@@ -19,5 +19,6 @@ dependencies = [
     "pulp < 2.8.0",
     "sqlite-utils",
     "spacy",
+    "pyzotero",
 ]
 dynamic = ["version"]

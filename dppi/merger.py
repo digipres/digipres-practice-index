@@ -4,7 +4,7 @@ import csv
 import json
 import argparse
 import logging
-from src.models import Publication
+from .models import Publication
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
