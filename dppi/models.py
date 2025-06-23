@@ -4,6 +4,7 @@ from datetime import datetime
 
 # Pydantic data model for simple conference output records:
 class Publication(BaseModel):
+    #id: str # Unique ID for this record, needed to connect ???
     source_name: str
     landing_page_url: Optional[str] = None
     document_url: Optional[str] = None

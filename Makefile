@@ -6,7 +6,7 @@ all: practice.db
 # ------
 
 # Run all the fetchers:
-fetch-all: fetch-phaidra-metadata fetch-ideals-metadata fetch-zotero-ipres2022
+fetch-all: fetch-phaidra-metadata fetch-ideals-metadata sources/ipres/raw/ipres2022.zotero.jsonl
 
 fetch-phaidra-metadata: dppi/fetcher.py
 	python dppi/fetcher.py fetch-metadata sources/ipres/index.csv sources/ipres/raw
@@ -14,7 +14,7 @@ fetch-phaidra-metadata: dppi/fetcher.py
 fetch-ideals-metadata: dppi/fetcher-ideals.py
 	python dppi/fetcher-ideals.py sources/ipres/raw/ipres2023.ideals.jsonl
 
-fetch-zotero-ipres2022: dppi/fetcher-zotero.py
+sources/ipres/raw/ipres2022.zotero.jsonl: dppi/fetcher-zotero.py
 	python -m dppi.fetcher-zotero > sources/ipres/raw/ipres2022.zotero.jsonl
 
 # ------

@@ -1,6 +1,7 @@
 import os
 import re
 import csv
+import sys
 import json
 import argparse
 import logging
@@ -53,7 +54,7 @@ def normalise_phaidra_jsonl(input_path):
                 nd.type = "poster"
             # Clean up titles, using any useful metadata in the title:
             m = TITLE_END_2_RE.search(nd.title)
-            logger.info(f"Processing PHAIDRA article \"{nd.title}\"...")
+            logger.debug(f"Processing PHAIDRA article \"{nd.title}\"...")
             if m:
                 nd.type = m.group(2).lower()
                 nd.title = TITLE_END_2_RE.sub("", nd.title)
@@ -82,8 +83,12 @@ def normalise_phaidra_jsonl(input_path):
             yield nd
 
 def normalise_eventsair_json(input_file):
+    # Some strings to strip from title:
+    to_remove = ['Short Paper: ', 'Long Paper: ', 'Workshop: ', 'Panel: ', 'Poster: ', 'Tutorial: ', 'TUTORIAL: ']
+    # Read the file:
     with open(input_file) as input:
         events = json.load(input)
+    counter = 0
     for item in events['AgendaData']['AgendaItems']:
         if len(item['Speakers']) > 0:
             # Reset fields so they don't get copied:
@@ -98,11 +103,17 @@ def normalise_eventsair_json(input_file):
                         keywords = doc['PlainText'].split(", ")
                     elif doc['Name'] == 'Proposal Document':
                         source_url = doc['Url']
+                # Tidy the title:
+                title = speaker['PresenationTitle'] # Mis-spelling is required!
+                for rem in to_remove:
+                    title = title.replace(rem,"")
+                # Create the pub
+                counter += 1
                 d = Publication(
-                    source_name='iPRES',
+                    source_name=f'iPRES:ea2022:{counter}',
                     year=2022,
                     language='eng',
-                    title=speaker['PresenationTitle'], # Mis-spelling is required!
+                    title=title, 
                     creators=[f"{speaker['FirstName']} {speaker['LastName']}"],
                     institutions=[speaker['Organization']],
                     license=DEFAULT_LICENSE,
@@ -115,7 +126,7 @@ def normalise_eventsair_json(input_file):
                 # Handle type:
                 types = [ "Panel", "Tutorial", "Workshop", "Long Paper", "Short Paper", "Poster" ]
                 for type in types:
-                    if d.title.startswith(f"{type}: "):
+                    if speaker['PresenationTitle'].startswith(f"{type}: "):
                         d.type = type.lower()
                 yield d
 
@@ -168,6 +179,99 @@ def normalise_ideals_jsonl(input_path):
     # Output papers:
     for title in papers:
         yield papers[title]
+
+def normalise_zotero_jsonl(input_path):
+    # Store publications under their key:
+    pubs = {}
+    # Store attachments separately:
+    attachments = []
+    # Type is stored under this key:
+    type_key = 'publication_type'
+    # Loop through Zotero items:
+    with open(input_path) as f:
+        for line in f:
+            item = json.loads(line)
+            data = item['data']
+            if data['itemType'] == 'attachment':
+                attachments.append(data)
+            else:
+                # Copy the type key into the data block:
+                data[type_key] = item[type_key]
+                pubs[data['key']] = data
+    # Assign attachments to publications:
+    for att in attachments:
+        parent_key = att['parentItem']
+        item_attachments = pubs[parent_key].get('attachments', [])
+        item_attachments.append(att)
+        pubs[parent_key]['attachments'] = item_attachments
+
+    # Now loop through assembled items
+    for key, data in pubs.items():
+        # Grab attachment link:
+        landing_page = None
+        document_url = None
+        slides_url = None
+        notes_url = None
+        stream_url = None
+        osf_id = None
+        for att in data['attachments']:
+            if 'osf_id' in att:
+                osf_id = att['osf_id']
+                landing_page = att['landing_page']
+                for osf_file in att['osf_files']['data']:
+                    title = osf_file['attributes']['name']
+                    if title.startswith('iPres22_Biography_') or title.startswith('iPres22_Holding-Slide'):
+                        logger.info(f"Skipping OSF File: {title}")
+                    elif title.startswith('iPres22_Abstract_') or re.search("iPres22_.. Transcript_", title) or title.startswith('iPres22_Posters_') or title.startswith('iPres22_Video-Transcript_') or title.startswith('iPres22_Memo_'):
+                        logger.warning(f"Skipping OSF File: {title} <<< Should do something with this!?")
+                    elif title.startswith('iPres22_Slides_') or title.startswith('iPres22_LightningTalk_') or title.startswith('iPres22_Poster_'):
+                        slides_url = osf_file['links']['download']
+                    elif title.startswith('iPres22_Collaborative-Notes'):
+                        notes_url = osf_file['links']['download']
+                    elif title.startswith('iPres22_Long-Paper_') or title.startswith('iPres22_Short-Paper_') or title.startswith('iPres22_Panel_') or title.startswith('iPres22_Tutorial_') or title.startswith('iPres22_Workshop_') or title.startswith('iPres22_Poster-Proposal_'):
+                        document_url = osf_file['links']['download']
+                    elif title.startswith('iPres22_Recording_') or title.startswith('iPres22_Poster-Video_'):
+                        stream_url = osf_file['links']['download']
+                    else:
+                        logger.fatal("Unknown OSF File attachment!")
+                        print(osf_file)
+                        sys.exit(42)
+        # Convert list of creators:
+        creators = []
+        for creator in data['creators']:
+            creators.append(f"{creator['firstName']} {creator['lastName']}")
+        # Extract the YouTube stream URL from the abstract (if needed?):
+        if not stream_url and "Recording: " in data['abstractNote']:
+            r = re.compile(r"Recording: ([^ ]+)", re.MULTILINE)
+            m = r.search(data['abstractNote'])
+            stream_url = m.group(1)
+        # Construct the item:
+        d = Publication(
+            source_name = f'iPRES:osf:{osf_id}',
+            landing_page_url = landing_page,
+            document_url=document_url,
+            slides_url=slides_url,
+            notes_url=notes_url,
+            stream_url=stream_url,
+            year = "2022",
+            title = data['title'][:-9],
+            abstract = data['abstractNote'],
+            language = data['language'],
+            creators = creators,
+            institutions = [],
+            keywords = [],
+            license= data.get('rights', DEFAULT_LICENSE),
+            size = None,
+            type = data[type_key].lower(),
+        )
+        yield d
+
+
+#            if data['linkMode'] == 'imported_file':
+#                print(data['key'], data['parentItem'], data['filename'])
+#            else:
+#                print(data['key'], data['parentItem'], data['linkMode'], data['url'])
+
 
 def normalise_ghent_csv(input_file):
     with open(input_file, encoding='utf-8-sig') as csv_file:
@@ -276,6 +380,8 @@ if __name__ == "__main__":
                 input_reader = normalise_phaidra_jsonl
             elif input_file.endswith('.eventsair.json'):
                 input_reader = normalise_eventsair_json
+            elif input_file.endswith('.zotero.jsonl'):
+                input_reader = normalise_zotero_jsonl
             elif input_file.endswith('ideals.jsonl'):
                 input_reader = normalise_ideals_jsonl
             elif input_file.endswith('ghent.csv'):
