@@ -80,7 +80,7 @@ The information about each iPRES conference is now stored as a set of Markdown+m
 
 #### Zotero
 
-- I (ANJ) set up an iPRES group library on Zotero: https://www.zotero.org/groups/5564150/ipres/library
+- I (ANJ) set up an iPRES group library on Zotero: https://www.zotero.org/groups/5564150/ipres/items/CB68T53W/library
 - This has been used to gather the iPRES 2022 data, as setting up suitable groups then adding them via the Zotero browser extension is a reasonably fast way of working.
 - The other iPRES conferences that make use of OSF could use this approach.
 - It is an open question as to whether much of this publications data would be better managed as a Zotero library.

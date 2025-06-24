@@ -45,6 +45,7 @@ practice.db: sources/ipres/merged.jsonl
 
 # Generate the Markdown versions (note that this expects the Publications repo to be available in a neighbouring folder!):
 generate-markdown: sources/ipres/merged.jsonl
+	echo "WARNING! This changes files in a relative directory! ../publications/"
 	rm -f ../publications/ipres/ipres-*/papers/*.md 
 	python -m dppi.pubmaker sources/ipres/merged.jsonl ../publications/ipres
 
