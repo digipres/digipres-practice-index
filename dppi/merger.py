@@ -249,6 +249,11 @@ def normalise_zotero_jsonl(input_path):
         # And return:
         yield d
 
+def canon_title(title):
+    # map title strings to a 'canonical' form to compensate for minor variations
+    canon = title.lower()
+    canon = canon.replace("  ", " ")
+    return canon
 
 def normalise_ideals_jsonl(input_path):
     # Normalise and separate:
@@ -282,23 +287,25 @@ def normalise_ideals_jsonl(input_path):
                 d.title = d.title[:-len(presentation_marker)]
                 presentations.append(d)
             else:
-                if d.title in papers:
+                canon = canon_title(d.title)
+                if canon in papers:
                     raise Exception(f"Duplicate title for {d}!")
                 else:
-                    papers[d.title] = d
+                    papers[canon] = d
     
     # Merge presentations
     for p in presentations:
-        print(f"'{p.title}'")
-        if p.title in papers:
-            papers[p.title].slides_url = p.landing_page_url
+        canon = canon_title(p.title)
+        print(f"'{p.title}' > {canon}")
+        if canon in papers:
+            papers[canon].slides_url = p.landing_page_url
         else:
             # This is just a presentation, so keep it as-is:
-            papers[p.title] = p
+            papers[canon] = p
         
     # Output papers:
-    for title in papers:
-        yield papers[title]
+    for canon in papers:
+        yield papers[canon]
 
 def normalise_ghent_csv(input_file):
     with open(input_file, encoding='utf-8-sig') as csv_file:

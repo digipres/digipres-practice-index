@@ -63,6 +63,24 @@ The information about each iPRES conference is now stored as a set of Markdown+m
 #### OSF
 
 - More recent conferences appear in OSF, which has a much more complicated structure, but allows more types of materials to be stored.
+- The iPRES 2022 data in OSF has been gathered via a Zotero collection, using sub-collections to make it clear what the publication type is.
 
 #### IDEALS
 
+- The IDEALS service was using for iPRES 2023, and offers a OAI-PMH API endpoint for gathering collections.
+
+#### EventsAir
+
+- iPRES 2022 used the EventsAir plaform, and the JSON file that powered the conference programme has been captured here.
+- A manual process was necessary to gather an map Zotero entries referring to OSF and match them with EventsAir entries. This code merges these mappings.
+
+#### PubPub
+
+- iPRES 2023 uses the PubPub platform, and the committee provided a detailed spreadsheet containing the necessary data and pointing to the PubPub items.
+
+#### Zotero
+
+- I (ANJ) set up an iPRES group library on Zotero: https://www.zotero.org/groups/5564150/ipres/library
+- This has been used to gather the iPRES 2022 data, as setting up suitable groups then adding them via the Zotero browser extension is a reasonably fast way of working.
+- The other iPRES conferences that make use of OSF could use this approach.
+- It is an open question as to whether much of this publications data would be better managed as a Zotero library.
