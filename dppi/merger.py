@@ -240,6 +240,12 @@ def normalise_zotero_jsonl(input_path):
             d.institutions = ead.institutions
             d.keywords = ead.keywords
             d.license = ead.license
+        else:
+            # Wipe defaults that are not being overridden via Zotero:
+            if "Recording: " in d.abstract:
+                d.abstract = None
+            if not d.license:
+                d.license = DEFAULT_LICENSE
         # And return:
         yield d
 
