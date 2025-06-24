@@ -1,7 +1,17 @@
 import json
+import logging
 import requests
+from requests.adapters import HTTPAdapter, Retry
 from .models import Publication
 from pyzotero import zotero
+
+# Set up a polite retry session:
+s = requests.Session()
+retries = Retry(total=5, backoff_factor=1)
+s.mount('http://', HTTPAdapter(max_retries=retries))
+
+# So we can see what's happening:
+logging.basicConfig(level=logging.DEBUG)
 
 # Connect to the iPRES group library:
 library_id = '5564150' 
@@ -44,6 +54,9 @@ for pub_type, collection_key in kinds.items():
                 att['osf_id'] = osf_id
                 att['landing_page'] = landing_page
                 osf_files_url = f"https://api.osf.io/v2/nodes/{osf_id}/files/osfstorage/?filter%5Bname%5D=&format=json&page=1&sort=name"
-                att['osf_files'] = requests.get(osf_files_url).json()
+                r = s.get(osf_files_url)
+                if r.status_code != 200:
+                    raise Exception("FAILED!")
+                att['osf_files'] = r.json()
 
         print(json.dumps(item))
