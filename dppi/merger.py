@@ -154,16 +154,21 @@ def normalise_zotero_jsonl(input_path):
     attachments = []
     # Type is stored under this key:
     type_key = 'publication_type'
+    # Self reference to be stored under this key:
+    self_key = 'links_self_href'
     # Loop through Zotero items:
     with open(input_path) as f:
         for line in f:
             item = json.loads(line)
             data = item['data']
             if data['itemType'] == 'attachment':
+                # Remember the reference:
+                data[self_key] = item['links']['self']['href']
                 attachments.append(data)
             else:
                 # Copy the type key into the data block:
                 data[type_key] = item[type_key]
+                # Store the data for later:
                 pubs[data['key']] = data
     # Assign attachments to publications:
     for att in attachments:
@@ -183,6 +188,7 @@ def normalise_zotero_jsonl(input_path):
         slides_url = None
         notes_url = None
         stream_url = None
+        submission_url = None
         osf_id = None
         for att in data['attachments']:
             if 'osf_id' in att:
@@ -205,6 +211,11 @@ def normalise_zotero_jsonl(input_path):
                     else:
                         logger.fatal(f"Unknown OSF File attachment! :: {json.dumps(osf_file)}")
                         sys.exit(42) # The Answer
+            else:
+                # Handle imported files:
+                if att['linkMode'] == 'imported_file' and att['title'] != 'Snapshot':
+                    submission_url = f"{att[self_key]}/file"
+
         # Convert list of creators:
         creators = []
         for creator in data['creators']:
@@ -222,6 +233,7 @@ def normalise_zotero_jsonl(input_path):
             slides_url=slides_url,
             notes_url=notes_url,
             stream_url=stream_url,
+            submission_url=submission_url,
             year = "2022",
             title = data['title'][:-9],
             abstract = data['abstractNote'],
@@ -247,7 +259,10 @@ def normalise_zotero_jsonl(input_path):
             if not d.license:
                 d.license = DEFAULT_LICENSE
         # And return:
-        yield d
+        if osf_id:
+            yield d
+        else:
+            logger.warning(f"Not returning record as no OSF match found! {data}")
 
 def canon_title(title):
     # map title strings to a 'canonical' form to compensate for minor variations
@@ -397,6 +412,14 @@ if __name__ == "__main__":
     # Set up a simpler argument parser:
     parser = argparse.ArgumentParser()
     parser.add_argument('input_dir')
+    parser.add_argument(
+        '--format',
+        dest='format_type',
+        choices=['awindex', 'dppi'],
+        default='dppi',
+        help="Specify the JSON format model type. Must be either 'awindex' for Awesome Indexes format or 'dppi' for the original format."
+    )
+
     parser.add_argument('output_prefix')
 
     args = parser.parse_args()
@@ -430,8 +453,11 @@ if __name__ == "__main__":
             for d in input_reader(input_file):
                 # Perform some common cleanup:
                 d = common_cleanup(d)
-                # Write to file
-                outfile.write(f'{d.model_dump_json()}\n')
+                # Write to file:
+                if args.format_type == 'awindex':
+                    outfile.write(f'{d.to_index_record().model_dump_json()}\n')
+                else:
+                    outfile.write(f'{d.model_dump_json()}\n')
 
     # Also write as CSV:
     write_jsonl_to_csv(input_path=output_jsonl, output_path=output_csv)

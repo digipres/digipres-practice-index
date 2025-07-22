@@ -3,6 +3,8 @@
 
 all: practice.db
 
+awindex: sources/ipres/merged.awindex.jsonl
+
 # ------
 
 # Run all the fetchers:
@@ -32,6 +34,9 @@ sources/ipres/raw/ipres2022.zotero.jsonl: dppi/fetcher-zotero.py
 # Generate the merged version from the raw source files:
 sources/ipres/merged.jsonl sources/ipres/merged.csv: sources/ipres/raw/ipres*.jsonl dppi/merger.py
 	python -m dppi.merger sources/ipres/raw sources/ipres/merged
+
+sources/ipres/merged.awindex.jsonl sources/ipres/merged.awindex.csv: sources/ipres/raw/ipres*.jsonl dppi/merger.py
+	python -m dppi.merger --format awindex sources/ipres/raw sources/ipres/merged.awindex
 
 # Generate the SQLite DB from the JSONL files:
 # Make can't automatically delete outputs when things fail.

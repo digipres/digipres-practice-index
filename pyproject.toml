@@ -12,13 +12,16 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "AGPL-3"}
 dependencies = [
-    "dvc",
-    "dvc_gdrive",
+    "awindex@git+https://github.com/digipres/awesome-indexes",
     "datasette",
-    "snakemake < 8.1.2",
-    "pulp < 2.8.0",
+    "Sickle",
     "sqlite-utils",
     "spacy",
+    "python-slugify",
     "pyzotero",
 ]
 dynamic = ["version"]
+
+[tool.setuptools.packages.find]
+include = ["dppi"]
+
