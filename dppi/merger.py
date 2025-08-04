@@ -4,6 +4,7 @@ import csv
 import sys
 import json
 import argparse
+import datetime
 import logging
 from .models import Publication
 
@@ -26,6 +27,7 @@ def normalise_phaidra_jsonl(input_path):
                 landing_page_url = f"https://phaidra.univie.ac.at/{doc['pid']}",
                 document_url = f"https://services.phaidra.univie.ac.at/api/object/{doc['pid']}/download",
                 year = doc['__year'],
+                date = datetime.datetime(year=doc['__year'], month=9, day=1),
                 title = doc['dc_title'][0],
                 abstract = doc['dc_description'][0],
                 phaidra_pid = doc['pid'],
@@ -100,7 +102,7 @@ def normalise_eventsair_json(input_file):
                     if doc['Name'] == 'Abstract':
                         abstract = doc['PlainText']
                     elif doc['Name'] == 'Keywords':
-                        keywords = doc['PlainText'].split(", ")
+                        keywords = doc['PlainText'].replace("<br />"," ").split(", ")
                     elif doc['Name'] == 'Proposal Document':
                         source_url = doc['Url']
                 # Tidy the title:
@@ -235,6 +237,7 @@ def normalise_zotero_jsonl(input_path):
             stream_url=stream_url,
             submission_url=submission_url,
             year = "2022",
+            date = datetime.datetime(year=2022, month=9, day=16),
             title = data['title'][:-9],
             abstract = data['abstractNote'],
             language = data['language'],
@@ -286,6 +289,7 @@ def normalise_ideals_jsonl(input_path):
                 landing_page_url = doc['source_url'],
                 document_url=doc['pdf_url'],
                 year = '2023',
+                date = datetime.datetime(year=2023, month=9, day=22),
                 title = doc['title'][0],
                 abstract = doc.get('description',[None])[0],
                 language = doc.get('language',['eng'])[0],
