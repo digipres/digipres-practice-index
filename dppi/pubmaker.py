@@ -29,6 +29,6 @@ if __name__ == "__main__":
             metadata['parent'] = f'iPRES {year}'
             metadata['grand_parent'] = 'iPRES'
             metadata['year'] = year
-            with open(output_file, 'wb') as f:
+            with open(output_file, 'w') as f:
                  post = frontmatter.Post("", **metadata)
                  frontmatter.dump(post, f)

@@ -25,19 +25,19 @@ def normalise_phaidra_jsonl(input_path):
             nd = Publication(
                 source_name = doc['__source_name'],
                 landing_page_url = f"https://phaidra.univie.ac.at/{doc['pid']}",
-                document_url = f"https://services.phaidra.univie.ac.at/api/object/{doc['pid']}/download",
+                document_url = f"https://phaidra.univie.ac.at/api/object/{doc['pid']}/download",
                 year = doc['__year'],
                 date = datetime.datetime(year=doc['__year'], month=9, day=1),
                 title = doc['dc_title'][0],
                 abstract = doc['dc_description'][0],
                 phaidra_pid = doc['pid'],
-                language = doc['dc_language'][0],
+                language = doc.get('dc_language', ['en'])[0],
                 content_type = doc.get('dc_format', [None])[0],
                 creators = doc.get('dc_creator', None),
                 institutions = set(),
-                identifiers = doc['dc_identifier'],
+                identifiers = doc.get('dc_identifier', None),
                 keywords = doc.get('keyword_suggest', [""])[0].split(","),
-                license = doc['dc_license'][0],
+                license = doc['dc_rights'][0],
                 size = int(doc['size']),
             )
             # TBC: dc_license, dc_subject_eng, size, tcreated, tmodified, __source_col_id

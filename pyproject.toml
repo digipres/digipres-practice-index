@@ -16,9 +16,9 @@ dependencies = [
     "datasette",
     "Sickle",
     "sqlite-utils",
-    "spacy",
     "python-slugify",
     "pyzotero",
+    "python-frontmatter",
 ]
 dynamic = ["version"]
 

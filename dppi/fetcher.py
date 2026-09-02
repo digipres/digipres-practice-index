@@ -2,9 +2,19 @@ import urllib.request
 import argparse
 import json
 import csv
+import time
+import os
 import os.path
 
-PHAIDRA_API_URL = "https://services.phaidra.univie.ac.at/api"
+PHAIDRA_API_URL = "https://phaidra.univie.ac.at/api"
+USER_AGENT = "DigiPresPubsRobot/1.0 (+https://www.digipres.org/about/)"
+PHAIDRA_COOKIE = os.getenv('PHAIDRA_COOKIE', None)
+
+# To mitigate barriers intended for AI crawlers:
+# e.g. export PHAIDRA_COOKIE="VALUE"
+if not PHAIDRA_COOKIE:
+    raise Exception("No 'PHAIDRA_COOKIE' environment variable set!")
+
 
 def get_phaidra_metadata(col_id, source_name, year, output_path):
     params = {
@@ -12,16 +22,22 @@ def get_phaidra_metadata(col_id, source_name, year, output_path):
         "wt" : "json",
         "rows" : 1000,
         "fq" : f'ispartof:"{col_id}"',
+        "fl" : "*,dc_language,dc_identifier,size",
         "indent" : "true",
     }
     data = urllib.parse.urlencode(params).encode(encoding='utf-8',errors='ignore')
-    req = urllib.request.Request(url=f"{PHAIDRA_API_URL}/search/select", data=data)
-    res = urllib.request.urlopen(req, timeout=15)
+    req = urllib.request.Request(url=f"{PHAIDRA_API_URL}/search/select", headers={'User-Agent': USER_AGENT, 'Cookie': PHAIDRA_COOKIE }, data=data)
+    res = urllib.request.urlopen(req, timeout=30)
 
     if res.status != 200:
         raise Exception(f"API call failed! -- {res.reason}")
 
-    j = json.loads(res.read().decode("utf-8"))
+    body = res.read().decode("utf-8")
+
+    if not body:
+        raise Exception(f"API call returned an empty response!")
+
+    j = json.loads(body)
 
     with open(output_path, 'w') as outfile:
         for doc in j['response']['docs']:
@@ -52,7 +68,10 @@ if __name__ == "__main__":
                     if not os.path.exists(args.output_dir):
                         os.makedirs(args.output_dir)
                     output_path = os.path.join(args.output_dir, f"{row['source_name'].lower()}{row['year']}.phaidra.jsonl")
-                    get_phaidra_metadata(row['repo_collection_id'], row['source_name'], int(row['year']), output_path)
+                    if not os.path.exists(output_path):
+                        get_phaidra_metadata(row['repo_collection_id'], row['source_name'], int(row['year']), output_path)
+                        print("...and sleep...")
+                        time.sleep(10)
                 else:
                     raise Exception(f"Unsupported repository system '{row['repo_system']}'!")
     else:
